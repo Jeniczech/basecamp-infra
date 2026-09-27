@@ -1,0 +1,7 @@
+praguescavengerhunt.cz {
+    reverse_proxy playground:3000
+}
+
+www.praguescavengerhunt.cz {
+    redir https://praguescavengerhunt.cz{uri} permanent
+}
