@@ -646,6 +646,8 @@ Once DNS resolves correctly and the application is reachable, Caddy handles HTTP
 
 Publish application images to GitHub Container Registry using immutable Git SHA tags, and deploy them with a CI workflow that uses its own dedicated SSH key. Deployment keys currently authenticate as `jenda` (see the Docker group warning above).
 
+Do not store long-lived GHCR credentials on Basecamp. The deploy workflow should log the server in to `ghcr.io` with the run's short-lived `GITHUB_TOKEN` (job permission `packages: read`) right before pulling, and log out when the deploy script exits. Keep the previous release image on the server so rollback needs no registry access.
+
 Before the first deployment against an empty database, run the application's initial migrations, then verify both internal Docker connectivity and the public HTTPS endpoint.
 
 `Jeniczech/playground` (`.github/workflows/deploy.yml`, `DEPLOYMENT.md`) is the reference implementation: SHA-only images, migrations before startup, health-checked deployment, automatic rollback and serialized deployments.
@@ -686,7 +688,6 @@ High-priority items include:
 Additional hardening:
 
 - dedicated restricted deployment user
-- dedicated read-only GHCR credentials on Basecamp
 - monitoring and alerting (uptime, CPU/RAM/disk, disk-space alerts, database)
 - decide how shared infrastructure changes should be deployed from this repository
 
