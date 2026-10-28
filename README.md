@@ -11,6 +11,12 @@ Basecamp currently provides shared:
 
 Individual applications are managed separately in their own repositories.
 
+Currently hosted applications:
+
+| Application | Domain | Repository | Deployment docs |
+|---|---|---|---|
+| `playground` | `praguescavengerhunt.cz` | `Jeniczech/playground` | `DEPLOYMENT.md` |
+
 ---
 
 ## Architecture
@@ -37,7 +43,7 @@ Internet
 └──────────────────────────────────────────┘
 ```
 
-Only Caddy is exposed to the internet on ports `80` and `443`.
+Only Caddy is exposed to the internet on ports `80` and `443`. SSH (`22`) is the only other open port.
 
 Application ports and PostgreSQL are not published publicly.
 
@@ -630,9 +636,19 @@ Infrastructure configuration changes should be committed to this repository.
 
 ## DNS
 
-Point the domain to the Basecamp public IP address.
+Point the domain to the Basecamp public IP address (currently `81.2.239.212`; this changes if the server is rebuilt).
 
 Once DNS resolves correctly and the application is reachable, Caddy handles HTTPS certificate issuance.
+
+---
+
+## Images and deployment
+
+Publish application images to GitHub Container Registry using immutable Git SHA tags, and deploy them with a CI workflow that uses its own dedicated SSH key. Deployment keys currently authenticate as `jenda` (see the Docker group warning above).
+
+Before the first deployment against an empty database, run the application's initial migrations, then verify both internal Docker connectivity and the public HTTPS endpoint.
+
+`Jeniczech/playground` (`.github/workflows/deploy.yml`, `DEPLOYMENT.md`) is the reference implementation: SHA-only images, migrations before startup, health-checked deployment, automatic rollback and serialized deployments.
 
 ---
 
@@ -654,6 +670,8 @@ The intended ownership model is:
 
 Production configuration should not be changed manually on the server without reflecting the change in Git.
 
+Shared infrastructure is currently deployed to `/opt/basecamp` manually rather than through CI/CD. This is intentional for now: changes to PostgreSQL or Caddy affect every hosted application, so they have a larger blast radius than a single application deployment.
+
 ---
 
 # Known limitations / future work
@@ -664,19 +682,15 @@ High-priority items include:
 
 - automated PostgreSQL backups
 - tested PostgreSQL restore procedure
-- CI test/lint quality gates before application deployment
-- persistent/object storage for Payload Media
-- post-deployment application health checks
-- safe database migration/rollback strategy
 
 Additional hardening:
 
 - dedicated restricted deployment user
 - dedicated read-only GHCR credentials on Basecamp
-- monitoring and alerting
-- production email configuration where required
-- GitHub Actions deployment concurrency
+- monitoring and alerting (uptime, CPU/RAM/disk, disk-space alerts, database)
 - decide how shared infrastructure changes should be deployed from this repository
+
+Application-level work (CI quality gates, health checks, rollback, migration strategy, media storage, email) is tracked in each application's repository. For `playground`, see its `DEPLOYMENT.md`.
 
 Full server provisioning is currently documented rather than automated. Ansible or similar tooling may be introduced later if maintaining the manual bootstrap becomes burdensome.
 
